@@ -11,6 +11,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - atlas_pgdata:/var/lib/postgresql/data
+      - ./database:/atlas-database:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-atlas} -d ${POSTGRES_DB:-ai_atlas}"]
       interval: 5s
