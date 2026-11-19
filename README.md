@@ -20,13 +20,13 @@ AI Atlas is a source-backed directory and learning workspace for AI tools, model
 2. Start PostgreSQL with `docker compose up -d db`, or create a PostgreSQL 16+ database yourself.
 3. Apply migrations in filename order:
    ```bash
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/001_core.sql
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/002_learning_and_ai.sql
+   docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/migrations/001_core.sql
+   docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/migrations/002_learning_and_ai.sql
    ```
 3. Load verified starter catalog records:
    ```bash
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/seeds/001_verified_catalog.sql
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/seeds/002_tool_families.sql
+   docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/001_verified_catalog.sql
+   docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/002_tool_families.sql
    ```
 
 For local development, use the provided Docker Compose file. Change all example passwords before exposing any service. Do not expose PostgreSQL directly to the public internet. The catalog seed is a curated starting point, not a complete index of every AI product.
