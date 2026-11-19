@@ -16,8 +16,9 @@ AI Atlas is a source-backed directory and learning workspace for AI tools, model
 - Application/API layer will be added in later milestones.
 
 ## Quick start
-1. Create a PostgreSQL database.
-2. Apply migrations in filename order:
+1. Copy `.env.example` to `.env` and set a strong local `POSTGRES_PASSWORD`.
+2. Start PostgreSQL with `docker compose up -d db`, or create a PostgreSQL 16+ database yourself.
+3. Apply migrations in filename order:
    ```bash
    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/001_core.sql
    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/002_learning_and_ai.sql
@@ -25,9 +26,10 @@ AI Atlas is a source-backed directory and learning workspace for AI tools, model
 3. Load verified starter catalog records:
    ```bash
    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/seeds/001_verified_catalog.sql
+   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/seeds/002_tool_families.sql
    ```
 
-For local development, use the provided Docker Compose file. Change all example passwords before exposing any service. Do not expose PostgreSQL directly to the public internet.
+For local development, use the provided Docker Compose file. Change all example passwords before exposing any service. Do not expose PostgreSQL directly to the public internet. The catalog seed is a curated starting point, not a complete index of every AI product.
 
 ## Data quality
 Catalog entries are not endorsements. A source record describes where a claim came from; it does not guarantee the claim remains current. The seed set intentionally avoids hard-coded prices and fabricated benchmark scores. Add pricing only from a current official pricing source, with currency, unit, region (when applicable), effective date and checked timestamp.
