@@ -1,0 +1,54 @@
+name: Validate PostgreSQL schema
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "database/**"
+      - ".github/workflows/sql-validation.yml"
+  pull_request:
+    paths:
+      - "database/**"
+      - ".github/workflows/sql-validation.yml"
+  workflow_dispatch:
+
+jobs:
+  postgres-schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ai_atlas_test
+          POSTGRES_USER: atlas_test
+          POSTGRES_PASSWORD: test_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atlas_test -d ai_atlas_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Apply schema migrations
+        env:
+          PGPASSWORD: test_only_password
+        run: |
+          psql -h localhost -U atlas_test -d ai_atlas_test -v ON_ERROR_STOP=1 -f database/migrations/001_core.sql
+          psql -h localhost -U atlas_test -d ai_atlas_test -v ON_ERROR_STOP=1 -f database/migrations/002_learning_and_ai.sql
+      - name: Load verified catalog seed data
+        env:
+          PGPASSWORD: test_only_password
+        run: |
+          psql -h localhost -U atlas_test -d ai_atlas_test -v ON_ERROR_STOP=1 -f database/seeds/001_verified_catalog.sql
+          psql -h localhost -U atlas_test -d ai_atlas_test -v ON_ERROR_STOP=1 -f database/seeds/002_tool_families.sql
+      - name: Assert catalog is populated
+        env:
+          PGPASSWORD: test_only_password
+        run: |
+          psql -h localhost -U atlas_test -d ai_atlas_test -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF (SELECT count(*) FROM catalog_items) < 10 THEN RAISE EXCEPTION 'catalog seed is unexpectedly small'; END IF; IF (SELECT count(*) FROM sources) < 8 THEN RAISE EXCEPTION 'source records are missing'; END IF; END \$\$;"
