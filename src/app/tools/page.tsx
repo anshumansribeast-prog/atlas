@@ -122,7 +122,7 @@ export default function ToolsDirectoryPage() {
             AI Tools Discovery Directory
           </h1>
           <p className="text-sm text-atlas-textMuted leading-relaxed">
-            Searchable, transparent database of artificial intelligence tools across 17 structured categories. No sponsored placements. Genuine capabilities, pricing tiers, and honest trade-offs.
+            Searchable, transparent database of artificial intelligence tools across {Math.max(categories.length - 1, 0)} structured categories. No sponsored placements. Genuine capabilities, pricing tiers, and honest trade-offs.
           </p>
         </div>
 
