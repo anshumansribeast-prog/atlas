@@ -29,6 +29,7 @@ AI Atlas is a source-backed directory and learning workspace for AI tools, model
    docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/001_verified_catalog.sql
    docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/002_tool_families.sql
    docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/003_model_specs.sql
+   docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/004_openai_gemini_models.sql
    ```
 5. Add the app connection string to `.env` (same password as above):
    ```
@@ -65,7 +66,10 @@ What is **built and verified** today:
 - PostgreSQL schema (catalog, providers, sources, capabilities, pricing, model
   profiles, model endpoints, courses, lessons, tutor sessions, knowledge
   chunks, usage events, audit events) applied through real migrations.
-- A source-backed starter catalog: 11 providers, 15 sources, 16 catalog items.
+- A source-backed starter catalog: 11 providers, 17 sources, 24 catalog items
+  (12 models, 10 tools, 2 platforms), 26 sourced claims and 8 priced API offers.
+  All specification and price claims link to an official provider page with a
+  `checked_at` date.
 - A Next.js 14 web application with a discovery interface at `/models`,
   `/tools` and `/tools/[slug]`, reading the catalog **from PostgreSQL** through
   `/api/models`, `/api/tools`, `/api/categories` and `/api/health`.

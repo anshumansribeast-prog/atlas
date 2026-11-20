@@ -174,6 +174,13 @@ export default function ModelsPage() {
                 </div>
               </div>
 
+              {model.pricingDetails && (
+                <div className="p-3 rounded-xl bg-atlas-surface border border-atlas-border/80 text-xs font-mono">
+                  <span className="text-atlas-textFaint block">Official list price:</span>
+                  <span className="text-white">{model.pricingDetails}</span>
+                </div>
+              )}
+
               {/* Verified Benchmarks */}
               {model.benchmarks && Object.keys(model.benchmarks).length > 0 && (
                 <div className="space-y-2 pt-2">

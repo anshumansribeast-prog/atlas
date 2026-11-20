@@ -110,6 +110,8 @@ export interface AIModel {
   benchmarks?: Record<string, string>;
   limitations: string[];
   releaseDate: string;
+  /** Human-readable official list price, when a sourced pricing offer exists. */
+  pricingDetails?: string;
 }
 
 export interface PromptTemplate {

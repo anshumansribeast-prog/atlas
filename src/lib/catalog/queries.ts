@@ -43,6 +43,8 @@ export interface CatalogItemRow {
   source_urls: string[];
   billing_type: string | null;
   plan_name: string | null;
+  price_summary: string | null;
+  price_offer_count: number;
 }
 
 const ITEM_COLUMNS = `
@@ -82,7 +84,9 @@ const ITEM_COLUMNS = `
     WHERE isrc.item_id = ci.id
   ), '{}') AS source_urls,
   po.billing_type,
-  po.plan_name
+  po.plan_name,
+  pr.price_summary,
+  COALESCE(pr.price_offer_count, 0)::int AS price_offer_count
 `;
 
 const ITEM_JOINS = `
@@ -95,6 +99,17 @@ const ITEM_JOINS = `
     ORDER BY checked_at DESC
     LIMIT 1
   ) po ON true
+  LEFT JOIN LATERAL (
+    SELECT string_agg(
+             regexp_replace(plan_name, '^Standard API — ', '') || ': ' ||
+             trim(trailing '.' from trim(trailing '0' from price_amount::text)) || ' ' ||
+             currency || ' ' || unit,
+             ' | ' ORDER BY plan_name
+           ) AS price_summary,
+           count(*) AS price_offer_count
+    FROM pricing_offers
+    WHERE item_id = ci.id AND is_current AND price_amount IS NOT NULL
+  ) pr ON true
 `;
 
 export interface ListOptions {
@@ -258,6 +273,9 @@ function pricingLabel(row: CatalogItemRow): PricingModel {
 }
 
 function pricingDetail(row: CatalogItemRow): string {
+  if (row.price_summary) {
+    return `Official list price — ${row.price_summary}. Source checked 2026-11-20; confirm on the provider pricing page before relying on it.`;
+  }
   if (!row.billing_type) {
     return "No official pricing recorded yet. Verify on the provider site before relying on it.";
   }
@@ -267,8 +285,14 @@ function pricingDetail(row: CatalogItemRow): string {
 
 function formatContextWindow(tokens: number | null): string {
   if (!tokens) return "Not published";
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(tokens % 1_000_000 === 0 ? 0 : 1)}M tokens`;
-  if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}K tokens`;
+  if (tokens >= 1_000_000) {
+    const millions = Math.round((tokens / 1_000_000) * 100) / 100;
+    return `${millions}M tokens`;
+  }
+  if (tokens >= 1_000) {
+    const thousands = Math.round((tokens / 1_000) * 10) / 10;
+    return `${thousands}K tokens`;
+  }
   return `${tokens} tokens`;
 }
 
@@ -343,6 +367,9 @@ export function toModelDto(row: CatalogItemRow, profile: ModelProfileRow | undef
     benchmarks: undefined,
     limitations: [],
     releaseDate: "",
+    pricingDetails: row.price_summary
+      ? `${row.price_summary} (checked 2026-11-20)`
+      : undefined,
   };
 }
 
