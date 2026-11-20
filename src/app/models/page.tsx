@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { db } from "@/lib/db";
+import React, { useEffect, useState } from "react";
 import { AIModel } from "@/lib/db/schema";
 import {
   Cpu,
@@ -16,9 +15,25 @@ import {
 } from "lucide-react";
 
 export default function ModelsPage() {
-  const models = db.getModels();
+  const [models, setModels] = useState<AIModel[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/models", { signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error ?? "Failed to load models");
+        setModels(payload.models ?? []);
+        setLoadError(null);
+      })
+      .catch((error: Error) => {
+        if (error.name !== "AbortError") setLoadError(error.message);
+      });
+    return () => controller.abort();
+  }, []);
 
   const filteredModels = models.filter((m) => {
     const matchesOpen =
@@ -84,6 +99,18 @@ export default function ModelsPage() {
           />
         </div>
       </div>
+
+      {loadError && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+          Could not load models from the database: {loadError}
+        </div>
+      )}
+
+      {!loadError && filteredModels.length === 0 && (
+        <div className="rounded-2xl border border-atlas-border bg-atlas-card p-8 text-center text-sm text-atlas-textMuted">
+          No models match this filter yet.
+        </div>
+      )}
 
       {/* Models Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

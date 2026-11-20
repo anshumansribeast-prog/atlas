@@ -10,10 +10,11 @@ AI Atlas is a source-backed directory and learning workspace for AI tools, model
 - **Real functionality only:** do not label mock data, placeholder integrations or untested connections as live.
 
 ## Stack
-- PostgreSQL 16+
+- PostgreSQL 16+ for catalog, learning and usage data
+- Next.js 14 (App Router), TypeScript and Tailwind CSS for the web app in `src/`
 - SQL-first schema and migrations in `database/migrations/`
 - Seed data in `database/seeds/`
-- Application/API layer will be added in later milestones.
+- `pg` with hand-written parameterised SQL in `src/lib/db/pg.ts` (no ORM layer yet)
 
 ## Quick start
 1. Copy `.env.example` to `.env` and set a strong local `POSTGRES_PASSWORD`.
@@ -23,10 +24,24 @@ AI Atlas is a source-backed directory and learning workspace for AI tools, model
    docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/migrations/001_core.sql
    docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/migrations/002_learning_and_ai.sql
    ```
-3. Load verified starter catalog records:
+4. Load verified starter catalog records:
    ```bash
    docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/001_verified_catalog.sql
    docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/002_tool_families.sql
+   docker compose exec -T db psql -U atlas -d ai_atlas -v ON_ERROR_STOP=1 -f /atlas-database/seeds/003_model_specs.sql
+   ```
+5. Add the app connection string to `.env` (same password as above):
+   ```
+   DATABASE_URL=postgresql://atlas:<your-password>@localhost:5432/ai_atlas
+   ```
+6. Install and run the web app:
+   ```bash
+   npm install
+   npm run dev     # http://localhost:3000
+   ```
+7. Verify the API layer is reading from PostgreSQL:
+   ```bash
+   npm run smoke   # 14 checks against the running server
    ```
 
 For local development, use the provided Docker Compose file. Change all example passwords before exposing any service. Do not expose PostgreSQL directly to the public internet. The catalog seed is a curated starting point, not a complete index of every AI product.
@@ -44,4 +59,28 @@ Catalog entries are not endorsements. A source record describes where a claim ca
 7. Admin: source review, catalog ingestion, model assignments, usage, errors and audit logs.
 
 ## Current status
-This repository currently contains the database foundation and a small official-source starter catalog. It is **not yet** a deployed web application, live AI gateway, automatic crawler or fully populated directory. Those features must be implemented and tested before being marked complete.
+
+What is **built and verified** today:
+
+- PostgreSQL schema (catalog, providers, sources, capabilities, pricing, model
+  profiles, model endpoints, courses, lessons, tutor sessions, knowledge
+  chunks, usage events, audit events) applied through real migrations.
+- A source-backed starter catalog: 11 providers, 15 sources, 16 catalog items.
+- A Next.js 14 web application with a discovery interface at `/models`,
+  `/tools` and `/tools/[slug]`, reading the catalog **from PostgreSQL** through
+  `/api/models`, `/api/tools`, `/api/categories` and `/api/health`.
+- Community tool submissions persisted to `catalog_items` as `unreviewed`
+  entries plus an `audit_events` row.
+- `npm run smoke` — 14 API checks that fail if the database stops answering.
+
+What is **not built yet**, and must not be described as working:
+
+- Authentication, users and role-based permissions.
+- The model gateway: provider adapters, encrypted credentials, live health checks.
+- The agent ecosystem and supervisor.
+- Courses, lessons and the AI tutor are still served from an in-process JSON
+  store (`src/lib/db` + `atlas-data.json`); they have not been migrated to SQL.
+- Knowledge ingestion, embeddings, vector retrieval.
+- Research workspace, admin review queue, analytics dashboards.
+- Automated crawling or automatic catalog refresh.
+

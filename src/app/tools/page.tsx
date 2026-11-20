@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -17,29 +17,14 @@ import {
 } from "lucide-react";
 import { useAtlasStore } from "@/lib/store";
 
-const CATEGORIES = [
-  "All",
-  "AI Chatbots",
-  "AI Writing",
-  "AI Image Generation",
-  "AI Video Generation",
-  "AI Audio and Voice",
-  "AI Coding Assistants",
-  "AI Research Tools",
-  "AI Productivity",
-  "AI Automation",
-  "AI Design",
-  "AI Data Analysis",
-  "AI Education",
-  "AI Business",
-  "AI Developer Platforms",
-  "AI Agent Frameworks",
-  "Local AI Platforms",
-  "AI Infrastructure",
-];
+// Categories come from PostgreSQL through /api/categories so the filter list can
+// never drift away from what the catalog actually contains.
+const DEFAULT_CATEGORIES = ["All"];
 
 export default function ToolsDirectoryPage() {
   const [tools, setTools] = useState<AITool[]>([]);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedPricing, setSelectedPricing] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,7 +33,7 @@ export default function ToolsDirectoryPage() {
 
   // Submission Form State
   const [subName, setSubName] = useState("");
-  const [subCategory, setSubCategory] = useState(CATEGORIES[1]);
+  const [subCategory, setSubCategory] = useState("");
   const [subUrl, setSubUrl] = useState("");
   const [subDesc, setSubDesc] = useState("");
   const [subPricing, setSubPricing] = useState("Freemium");
@@ -56,9 +41,26 @@ export default function ToolsDirectoryPage() {
 
   useEffect(() => {
     fetch("/api/tools")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Failed to load tools");
+        if (data.tools) setTools(data.tools);
+        setLoadError(null);
+      })
+      .catch((err: Error) => setLoadError(err.message));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/categories")
       .then((res) => res.json())
       .then((data) => {
-        if (data.tools) setTools(data.tools);
+        const names: string[] = (data.categories ?? []).map(
+          (category: { name: string }) => category.name
+        );
+        if (names.length > 0) {
+          setCategories(["All", ...names]);
+          setSubCategory((current) => current || names[0]);
+        }
       })
       .catch((err) => console.error(err));
   }, []);
@@ -167,7 +169,7 @@ export default function ToolsDirectoryPage() {
 
         {/* 17 Category Tabs (Scrollable) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -254,7 +256,7 @@ export default function ToolsDirectoryPage() {
               <div className="pt-4 border-t border-atlas-border/60 mt-5 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 font-mono">
                   <span className="text-white font-medium">{tool.pricingModel}</span>
-                  <span className="text-atlas-border">•</span>
+                  <span className="text-atlas-border">â€¢</span>
                   <div className="flex items-center gap-1 text-amber-400">
                     <Star className="w-3 h-3 fill-current" />
                     <span>{tool.rating}</span>
@@ -265,7 +267,7 @@ export default function ToolsDirectoryPage() {
                   href={`/tools/${tool.slug}`}
                   className="font-mono text-atlas-cyan group-hover:underline text-xs"
                 >
-                  Full Profile →
+                  Full Profile â†’
                 </Link>
               </div>
             </div>
@@ -323,7 +325,7 @@ export default function ToolsDirectoryPage() {
                       onChange={(e) => setSubCategory(e.target.value)}
                       className="w-full px-3 py-2 bg-atlas-surface border border-atlas-border rounded-xl text-white focus:outline-none"
                     >
-                      {CATEGORIES.slice(1).map((c) => (
+                      {categories.slice(1).map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
